@@ -1,0 +1,25 @@
+{
+    "fileheader.customMade": {
+        "Author": "CPythoner",
+        "Date": "Do not edit",
+        "LastEditors": "CPythoner (qiang0310@126.com)",
+        "LastEditTime": "Do not edit"
+    },
+    // doxygen config
+    "doxdocgen.generic.authorName": "CPythoner",
+    "doxdocgen.generic.authorEmail": "qiang0310@126.com",
+    "doxdocgen.file.copyrightTag": [
+        "@copyright Copyright (c) 2021 CPythoner. All Rights Reserved. "
+    ],
+    "files.associations": {
+        "*.py": "python",
+        "*.dat": "csv (pipe)",
+        "*.csv": "csv (semicolon)",
+        "xstring": "cpp",
+        "xmemory": "cpp",
+        "cstdlib": "cpp"
+    },
+    "editor.defaultFormatter": "ms-vscode.cpptools",    // 指定 Formater，只有指定之后下面一行才起作用
+    "editor.formatOnType": true,                        // 控制键入一行后是否自动格式化
+    "C_Cpp.clang_format_style": "file"                  // 指定编码样式，如果指定为 `file`，默认去找根目录下的 `.clang-format` 文件
+}

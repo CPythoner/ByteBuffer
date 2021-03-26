@@ -1,0 +1,92 @@
+---
+# 语言: None Cpp Java Objc Protp
+Language: Cpp
+# 基于哪个配置文件
+BasedOnStyle:  Google
+# 访问说明符的偏移(public private)
+AccessModifierOffset: -4
+# 连续的赋值时,对齐所有的等号
+AlignConsecutiveAssignments: true
+# 连续声明时，对齐所有声明的变量名
+AlignConsecutiveDeclarations: true
+# 左对齐换行(使用反斜杠换行)的反斜杠
+AlignEscapedNewlinesLeft: true
+# 水平对齐二元和三元表达式的操作数
+AlignOperands: true
+# 对齐连续的尾随的注释
+AlignTrailingComments: true
+# 允许函数声明的所有参数在放在下一行
+# AllowAllParametersOfDeclarationOnNextLine: true
+# 不允许短的块放在同一行
+AllowShortBlocksOnASingleLine : false
+# 不允许短的case标签放在同一行
+AllowShortCaseLabelsOnASingleLine: false
+# 允许短的函数放在同一行: None, InlineOnly(定义在类中), Empty(空函数), Inline(定义在类中，空函数), All
+AllowShortFunctionsOnASingleLine: Empty
+# 是否允许短if单行 If true, if (a) return; 可以放到同一行
+AllowShortIfStatementsOnASingleLine: false
+# 不允许短的循环保持在同一行
+AllowShortLoopsOnASingleLine: false
+# 每行字符的限制，0表示没有限制
+ColumnLimit: 100
+DerivePointerAlignment: false
+# 指针的*的挨着哪边
+PointerAlignment: Left
+# 缩进宽度
+IndentWidth: 4
+# 连续的空行保留几行
+MaxEmptyLinesToKeep: 1
+# 中括号两边空格 []
+SpacesInSquareBrackets: false
+# 小括号两边添加空格
+SpacesInParentheses : false
+# 等号两边的空格
+SpaceBeforeAssignmentOperators: true
+# 缩进
+IndentWrappedFunctionNames: true
+# 构造函数的初始化列表的缩进宽度
+ConstructorInitializerIndentWidth: 4
+#在构造函数初始化时按逗号断行，并以冒号对齐
+BreakConstructorInitializersBeforeComma: true
+#括号后添加空格
+SpaceAfterCStyleCast: false
+# 宏定义对齐
+AlignConsecutiveMacros: true
+# 缩进case 标签
+IndentCaseLabels: false
+
+# 以下 5 个参数设置保证参数过多时，小括号后面换行，每行一个参数
+# 括号之后,水平对齐参数: Align DontAlign AlwaysBreak
+AlignAfterOpenBracket: AlwaysBreak
+ExperimentalAutoDetectBinPacking: false
+AllowAllParametersOfDeclarationOnNextLine: false
+BinPackArguments: false
+BinPackParameters: false
+
+# Always break before braces
+BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterCaseLabel: true
+  AfterClass: true
+  AfterControlStatement: true
+  AfterEnum: true
+  AfterFunction: true
+  AfterNamespace: true
+  AfterStruct: true
+  AfterUnion: true
+  BeforeCatch: true
+  BeforeElse: true
+  IndentBraces: false
+  SplitEmptyFunction: false
+  SplitEmptyRecord: false
+  SplitEmptyNamespace: false
+  # Keeps extern "C" blocks unindented.
+  AfterExternBlock: false
+
+# 禁止对头文件进行排序，以免编译错误，开发者保证 #include 正确性和美观性
+SortIncludes: false
+
+Standard: Cpp11
+TabWidth: 4
+UseTab: Never
+...
