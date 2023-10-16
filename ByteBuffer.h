@@ -37,6 +37,7 @@ public:
         p_buffer_ = static_cast<uint8_t*>(calloc(capacity_, sizeof(uint8_t)));
 
         putBytes(arr, length);
+        flip();
     }
     ~ByteBuffer()
     {
@@ -294,7 +295,6 @@ public:
     {
         mark_     = DEFAULT_MARK_POSITION;
         position_ = 0;
-
         return *this;
     }
 
