@@ -49,19 +49,27 @@ public:
     }
 
     // Write Methods
-    ByteBuffer& put(ByteBuffer* bb)
+    template <typename T>
+    ByteBuffer& put(T data) const
     {
-        for (uint32_t i = 0; i < bb->limit(); i++)
-            append<uint8_t>(bb->get(i));
-
+        return append<T>(data);
+    }
+    template <typename T>
+    ByteBuffer& put(T data, uint32_t index) const
+    {
+        return insert<T>(data, index);
+    }
+    ByteBuffer& putBuffer(const ByteBuffer* bb)
+    {
+        putBytes(bb->p_buffer_, bb->limit());
         return *this;
     }
-    ByteBuffer& put(uint8_t value)
+    ByteBuffer& putByte(uint8_t value)
     {
         append<uint8_t>(value);
         return *this;
     }
-    ByteBuffer& put(uint8_t value, uint32_t index)
+    ByteBuffer& putByte(uint8_t value, uint32_t index)
     {
         insert<uint8_t>(value, index);
         return *this;
@@ -155,11 +163,21 @@ public:
     }
 
     // Read Methods
-    uint8_t get()
+    template <typename T>
+    T get() const
+    {
+        return read<T>();
+    }
+    template <typename T>
+    T get(uint32_t index) const
+    {
+        return read<T>(index);
+    }
+    uint8_t getByte()
     {
         return read<uint8_t>();
     }
-    uint8_t get(uint32_t index) const
+    uint8_t getByte(uint32_t index) const
     {
         return read<uint8_t>(index);
     }
@@ -231,7 +249,7 @@ public:
         return read<double>(index);
     }
 
-    bool equals(ByteBuffer* other)
+    bool equals(const ByteBuffer* other) const
     {
         uint32_t len = limit();
         if (len != other->limit())
@@ -239,18 +257,18 @@ public:
 
         for (uint32_t i = 0; i < len; i++)
         {
-            if (get(i) != other->get(i))
+            if (getByte(i) != other->getByte(i))
                 return false;
         }
 
         return true;
     }
-    ByteBuffer* duplicate()
+    ByteBuffer* duplicate() const
     {
         ByteBuffer* newBuffer = new ByteBuffer(capacity_);
 
         // copy data
-        newBuffer->put(this);
+        newBuffer->putBuffer(this);
 
         newBuffer->limit(limit_);
         newBuffer->position(position_);
@@ -370,6 +388,11 @@ public:
         return *this;
     }
 
+    uint8_t* buffer() const
+    {
+        return p_buffer_;
+    }
+
     void printInfo() const
     {
         std::cout << "ByteBuffer " << name_ << ":\n"
@@ -423,9 +446,6 @@ private:
     template<typename T>
     void insert(T data, uint32_t index)
     {
-        uint32_t s = sizeof(data);
-        checkSize(index, s);
-
         position_ = index;
         append<T>(data);
     }
