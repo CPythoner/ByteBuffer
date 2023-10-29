@@ -1,5 +1,3 @@
-
-
 #ifndef __BYTEBUFFER_H__
 #define __BYTEBUFFER_H__
 
@@ -12,74 +10,95 @@
 
 // Default size of the buffer
 #define DEFAULT_BUFFER_SIZE 2048
+#define DEFAULT_MARK_POSITION ((uint32_t)-1)
 
 class ByteBuffer
 {
 public:
     ByteBuffer(uint32_t capacity = DEFAULT_BUFFER_SIZE, const char* name = "")
-        : mark_(-1),
+        : name_(name),
+        mark_(DEFAULT_MARK_POSITION),
         limit_(capacity),
         position_(0),
-        capacity_(capacity),
-        name_(name)
+        capacity_(capacity)
     {
-        p_buffer_ = NULL;
-        p_buffer_ = (uint8_t*)calloc(capacity_, sizeof(uint8_t));
+        p_buffer_ = nullptr;
+        p_buffer_ = static_cast<uint8_t*>(calloc(capacity_, sizeof(uint8_t)));
     }
 
     ByteBuffer(uint8_t* arr, uint32_t length, const char* name = "")
-        : mark_(-1),
+        : name_(name),
+        mark_(DEFAULT_MARK_POSITION),
         limit_(length),
         position_(0),
-        capacity_(length),
-        name_(name)
+        capacity_(length)
     {
-        p_buffer_ = NULL;
-        p_buffer_ = (uint8_t*)calloc(capacity_, sizeof(uint8_t));
+        p_buffer_ = nullptr;
+        p_buffer_ = static_cast<uint8_t*>(calloc(capacity_, sizeof(uint8_t)));
 
-        putBytes(arr, capacity_);
-        clear();
+        putBytes(arr, length);
+        flip();
     }
     ~ByteBuffer()
     {
         if (p_buffer_)
         {
             free(p_buffer_);
-            p_buffer_ = NULL;
+            p_buffer_ = nullptr;
         }
     }
 
     // Write Methods
-    ByteBuffer& put(ByteBuffer* bb)
+    template <typename T>
+    ByteBuffer& put(T data) const
     {
-        for (uint32_t i = 0; i < bb->limit(); i++)
-            append<uint8_t>(bb->get(i));
-
+        return append<T>(data);
+    }
+    template <typename T>
+    ByteBuffer& put(T data, uint32_t index) const
+    {
+        return insert<T>(data, index);
+    }
+    ByteBuffer& putBuffer(const ByteBuffer* bb)
+    {
+        putBytes(bb->p_buffer_, bb->limit());
         return *this;
     }
-    ByteBuffer& put(uint8_t value)
+    ByteBuffer& putByte(uint8_t value)
     {
         append<uint8_t>(value);
         return *this;
     }
-    ByteBuffer& put(uint8_t value, uint32_t index)
+    ByteBuffer& putByte(uint8_t value, uint32_t index)
     {
         insert<uint8_t>(value, index);
         return *this;
     }
     ByteBuffer& putBytes(const uint8_t* buf, uint32_t len)
     {
-        for (uint32_t i = 0; i < len; i++)
-            append<uint8_t>(buf[i]);
-
+        append(buf, len);
         return *this;
     }
     ByteBuffer& putBytes(const uint8_t* buf, uint32_t len, uint32_t index)
     {
         position_ = index;
-        for (uint32_t i = 0; i < len; i++)
-            append<uint8_t>(buf[i]);
-
+        append(buf, len);
+        return *this;
+    }
+    ByteBuffer& putString(const std::string& buf)
+    {
+        append(reinterpret_cast<const uint8_t*>(buf.data()), static_cast<uint32_t>(buf.size()));
+        return *this;
+    }
+    ByteBuffer& putString(const std::string& buf, uint32_t len)
+    {
+        append(reinterpret_cast<const uint8_t*>(buf.data()), len);
+        return *this;
+    }
+    ByteBuffer& putString(const std::string& buf, uint32_t len, uint32_t index)
+    {
+        position_ = index;
+        append(reinterpret_cast<const uint8_t*>(buf.data()), len);
         return *this;
     }
     ByteBuffer& putChar(char value)
@@ -144,44 +163,50 @@ public:
     }
 
     // Read Methods
-    uint8_t get()
+    template <typename T>
+    T get() const
+    {
+        return read<T>();
+    }
+    template <typename T>
+    T get(uint32_t index) const
+    {
+        return read<T>(index);
+    }
+    uint8_t getByte()
     {
         return read<uint8_t>();
     }
-    uint8_t get(uint32_t index) const
+    uint8_t getByte(uint32_t index) const
     {
         return read<uint8_t>(index);
     }
     void getBytes(uint8_t* buf, uint32_t len)
     {
-        // 合法性检测
-        if (!p_buffer_ || position_ + len > limit_)
-            return;
-
-        for (uint32_t i = 0; i < len; i++)
-        {
-            buf[i] = p_buffer_[position_++];
-        }
+        if (0 == memcpy_s(buf, len, p_buffer_ + position_, remaining()))
+            position_ = position_ + len;
     }
     void getBytes(uint32_t index, uint8_t* buf, uint32_t len) const
     {
-        // 合法性检测
-        if (!p_buffer_ || index + len > limit_)
-            return;
-
-        uint32_t pos = index;
-        for (uint32_t i = 0; i < len; i++)
-        {
-            buf[i] = p_buffer_[pos++];
-        }
+        memcpy_s(buf, len, p_buffer_ + index, limit_ - index);
+    }
+    std::string getString(uint32_t len)
+    {
+        std::string result((char*)p_buffer_ + position_, len);
+        position_ += len;
+        return result;
+    }
+    std::string getString(uint32_t index, uint32_t len) const
+    {
+        return {p_buffer_ + index, p_buffer_ + index + len};
     }
     char getChar()
     {
-        return read<uint8_t>();
+        return read<char>();
     }
     char getChar(uint32_t index) const
     {
-        return read<uint8_t>(index);
+        return read<char>(index);
     }
     uint16_t getShort()
     {
@@ -224,7 +249,7 @@ public:
         return read<double>(index);
     }
 
-    bool equals(ByteBuffer* other)
+    bool equals(const ByteBuffer* other) const
     {
         uint32_t len = limit();
         if (len != other->limit())
@@ -232,18 +257,18 @@ public:
 
         for (uint32_t i = 0; i < len; i++)
         {
-            if (get(i) != other->get(i))
+            if (getByte(i) != other->getByte(i))
                 return false;
         }
 
         return true;
     }
-    ByteBuffer* duplicate()
+    ByteBuffer* duplicate() const
     {
         ByteBuffer* newBuffer = new ByteBuffer(capacity_);
 
         // copy data
-        newBuffer->put(this);
+        newBuffer->putBuffer(this);
 
         newBuffer->limit(limit_);
         newBuffer->position(position_);
@@ -254,7 +279,7 @@ public:
     ByteBuffer& clear()
     {
         position_ = 0;
-        mark_     = -1;
+        mark_     = DEFAULT_MARK_POSITION;
         limit_    = capacity_;
         return *this;
     }
@@ -262,7 +287,7 @@ public:
     {
         limit_    = position_;
         position_ = 0;
-        mark_     = -1;
+        mark_     = DEFAULT_MARK_POSITION;
         return *this;
     }
     ByteBuffer& mark()
@@ -273,22 +298,21 @@ public:
 
     ByteBuffer& discardMark()
     {
-        mark_ = -1;
+        mark_ = DEFAULT_MARK_POSITION;
         return *this;
     }
-    ByteBuffer& reset()
+    ByteBuffer& rewind()
     {
-        if (mark_ >= 0)
+        if (mark_ != DEFAULT_MARK_POSITION)
             position_ = mark_;
 
         return *this;
     }
 
-    ByteBuffer& rewind()
+    ByteBuffer& reset()
     {
-        mark_ = -1;
+        mark_     = DEFAULT_MARK_POSITION;
         position_ = 0;
-
         return *this;
     }
 
@@ -307,14 +331,13 @@ public:
                 p_buffer_[i] = p_buffer_[position_ + i];
             }
             position_ = limit_ - position_;
-        } while (0);
+        } while (false);
 
         limit_ = capacity_;
         return *this;
     }
 
-
-    bool hasRemaining()
+    bool hasRemaining() const
     {
         return limit_ > position_;
     }
@@ -330,25 +353,44 @@ public:
     {
         return position_;
     }
+    uint32_t move(const uint32_t newPos)
+    {
+        if (newPos <= limit_)
+            position_ = newPos;
+        return position_;
+    }
+    uint32_t step(const int32_t steps)
+    {
+        int64_t newPos = position_ + steps;
+        if (newPos >= 0 && newPos <= limit_)
+            position_ = static_cast<uint32_t>(newPos);
+        return position_;
+    }
     uint32_t limit() const
     {
         return limit_;
     }
 
-    ByteBuffer& limit(uint32_t newLimit)
+    ByteBuffer& limit(const uint32_t newLimit)
     {
         if (position_ > newLimit)
             position_ = newLimit;
 
         if (mark_ > newLimit)
-            mark_ = -1;
+            mark_ = DEFAULT_MARK_POSITION;
 
         return *this;
     }
 
-    ByteBuffer& position(uint32_t newPosition)
+    ByteBuffer& position(const uint32_t newPosition)
     {
         position_ = newPosition;
+        return *this;
+    }
+
+    uint8_t* buffer() const
+    {
+        return p_buffer_;
     }
 
     void printInfo() const
@@ -367,7 +409,7 @@ private:
         if (!p_buffer_ || index + sizeof(T) > limit_)
             return 0;
 
-        return *((T*)&p_buffer_[index]);
+        return *reinterpret_cast<T*>(&p_buffer_[index]);
     }
 
     template <typename T>
@@ -377,7 +419,6 @@ private:
         position_ += sizeof(T);
         return data;
     }
-
 
     template<typename T>
     void append(T data)
@@ -391,13 +432,20 @@ private:
         memcpy(&p_buffer_[position_], (uint8_t*)&data, s);
         position_ += s;
     }
+    void append(const uint8_t* data, uint32_t len)
+    {
+        if (!p_buffer_)
+            return;
+
+        checkSize(len);
+
+        memcpy(&p_buffer_[position_], data, len);
+        position_ += len;
+    }
 
     template<typename T>
     void insert(T data, uint32_t index)
     {
-        uint32_t s = sizeof(data);
-        checkSize(index, s);
-
         position_ = index;
         append<T>(data);
     }
@@ -430,7 +478,7 @@ private:
     const uint32_t   BUFFER_SIZE_INCREASE = 2048;
     std::string      name_;
     uint8_t*         p_buffer_;
-    int32_t          mark_;
+    uint32_t         mark_;
     uint32_t         limit_;
     uint32_t         position_;
     uint32_t         capacity_;
