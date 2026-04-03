@@ -5,6 +5,7 @@
 #include <cstring>
 #include <cstdlib>
 #include <vector>
+#include <algorithm>
 
 #include <string>
 #include <iostream>
@@ -188,7 +189,7 @@ public:
         if (buffer_.empty() || position_ + len > limit_)
             return;
 
-        memcpy(buf, buffer_.data() + position_, len);
+        std::copy(buffer_.begin() + position_, buffer_.begin() + position_ + len, buf);
         position_ += len;
     }
     void getBytes(uint32_t index, uint8_t* buf, uint32_t len) const
@@ -196,7 +197,7 @@ public:
         if (buffer_.empty() || index + len > limit_)
             return;
 
-        memcpy(buf, buffer_.data() + index, len);
+        std::copy(buffer_.begin() + index, buffer_.begin() + index + len, buf);
     }
     char getChar()
     {
@@ -324,7 +325,7 @@ public:
         else
         {
             uint32_t remaining = limit_ - position_;
-            memmove(buffer_.data(), &buffer_[position_], remaining);
+            std::copy(buffer_.begin() + position_, buffer_.begin() + limit_, buffer_.begin());
             position_ = remaining;
         }
 
