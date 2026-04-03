@@ -8,9 +8,13 @@
 
 #include <string>
 #include <iostream>
+#include <stdexcept>
 
 // Default size of the buffer
 constexpr uint32_t DEFAULT_BUFFER_SIZE = 2048;
+
+// Mark value indicating no mark is set
+constexpr uint32_t MARK_UNSET = UINT32_MAX;
 
 class ByteBuffer
 {
@@ -29,7 +33,7 @@ public:
           p_buffer_(other.p_buffer_)
     {
         other.p_buffer_ = nullptr;
-        other.mark_ = -1;
+        other.mark_ = MARK_UNSET;
         other.limit_ = 0;
         other.position_ = 0;
         other.capacity_ = 0;
@@ -50,7 +54,7 @@ public:
             name_ = std::move(other.name_);
             p_buffer_ = other.p_buffer_;
             other.p_buffer_ = nullptr;
-            other.mark_ = -1;
+            other.mark_ = MARK_UNSET;
             other.limit_ = 0;
             other.position_ = 0;
             other.capacity_ = 0;
@@ -59,7 +63,7 @@ public:
     }
 
     ByteBuffer(uint32_t capacity = DEFAULT_BUFFER_SIZE, const char* name = "")
-        : mark_(-1),
+        : mark_(MARK_UNSET),
           limit_(capacity),
           position_(0),
           capacity_(capacity),
@@ -69,7 +73,7 @@ public:
     }
 
     ByteBuffer(uint8_t* arr, uint32_t length, const char* name = "")
-        : mark_(-1),
+        : mark_(MARK_UNSET),
           limit_(length),
           position_(0),
           capacity_(length),
@@ -287,7 +291,7 @@ public:
     ByteBuffer& clear()
     {
         position_ = 0;
-        mark_     = -1;
+        mark_     = MARK_UNSET;
         limit_    = capacity_;
         return *this;
     }
@@ -295,7 +299,7 @@ public:
     {
         limit_    = position_;
         position_ = 0;
-        mark_     = -1;
+        mark_     = MARK_UNSET;
         return *this;
     }
     ByteBuffer& mark()
@@ -306,12 +310,12 @@ public:
 
     ByteBuffer& discardMark()
     {
-        mark_ = -1;
+        mark_ = MARK_UNSET;
         return *this;
     }
     ByteBuffer& reset()
     {
-        if (mark_ >= 0)
+        if (mark_ != MARK_UNSET)
             position_ = mark_;
 
         return *this;
@@ -319,7 +323,7 @@ public:
 
     ByteBuffer& rewind()
     {
-        mark_ = -1;
+        mark_ = MARK_UNSET;
         position_ = 0;
 
         return *this;
@@ -374,7 +378,7 @@ public:
             position_ = newLimit;
 
         if (mark_ > newLimit)
-            mark_ = -1;
+            mark_ = MARK_UNSET;
 
         return *this;
     }
@@ -454,8 +458,7 @@ private:
         uint8_t* pBuf = static_cast<uint8_t*>(realloc(p_buffer_, newSize));
         if (!pBuf)
         {
-            std::cout << "relloc failed!" << std::endl;
-            exit(1);
+            throw std::bad_alloc();
         }
 
         p_buffer_ = pBuf;
@@ -466,7 +469,7 @@ private:
     const uint32_t   BUFFER_SIZE_INCREASE = 2048;
     std::string      name_;
     uint8_t*         p_buffer_;
-    int32_t          mark_;
+    uint32_t         mark_;
     uint32_t         limit_;
     uint32_t         position_;
     uint32_t         capacity_;
