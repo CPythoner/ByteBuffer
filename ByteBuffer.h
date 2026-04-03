@@ -18,11 +18,11 @@ constexpr uint32_t MARK_UNSET = UINT32_MAX;
 class ByteBuffer
 {
 public:
-    // 禁用拷贝构造函数和赋值运算符，防止浅拷贝导致的双重释放问题
+    // Disable copy constructor and assignment operator to prevent double-free issues caused by shallow copy
     ByteBuffer(const ByteBuffer&) = delete;
     ByteBuffer& operator=(const ByteBuffer&) = delete;
 
-    // 允许移动语义
+    // Allow move semantics
     ByteBuffer(ByteBuffer&& other) noexcept
         : mark_(other.mark_),
           limit_(other.limit_),
