@@ -27,6 +27,14 @@ C++ 实现的 Java NIO ByteBuffer 功能，支持跨平台（Windows、macOS、L
     - [运行测试](#运行测试)
     - [CI 状态](#ci-状态)
   - [注意事项](#注意事项)
+  - [与 Java ByteBuffer 的接口对比](#与-java-bytebuffer-的接口对比)
+    - [创建方法](#创建方法-1)
+    - [读取方法 (Get)](#读取方法-get)
+    - [写入方法 (Put)](#写入方法-put)
+    - [状态管理方法](#状态管理方法)
+    - [属性访问方法](#属性访问方法)
+    - [其他方法](#其他方法-1)
+    - [C++ 特有功能](#c-特有功能)
   - [参考链接](#参考链接)
 
 ## 介绍
@@ -244,6 +252,92 @@ ctest --output-on-failure
 3. **字节序**：本实现使用主机字节序（host byte order）。如需网络传输，请自行处理字节序转换（如使用 `htons`/`ntohs` 等函数）。
 
 4. **异常处理**：当内存分配失败时，会抛出 `std::bad_alloc` 异常。请确保在调用时进行适当的异常处理。
+
+## 与 Java ByteBuffer 的接口对比
+
+本实现参考了 Java NIO 的 ByteBuffer 类，以下是接口的对应关系。
+
+### 创建方法
+
+| Java API | C++ 实现 |
+|----------|----------|
+| `static ByteBuffer allocate(int capacity)` | `ByteBuffer(capacity, name="")` |
+| `ByteBuffer wrap(byte[] array)` | `ByteBuffer(arr, length, name="")` |
+
+### 读取方法 (Get)
+
+| Java API | C++ 实现 |
+|----------|----------|
+| `byte get()` | `uint8_t get()` |
+| `byte get(int index)` | `uint8_t get(uint32_t index) const` |
+| `ByteBuffer get(byte[] dst)` | `void getBytes(uint8_t* buf, uint32_t len)` |
+| `ByteBuffer get(byte[] dst, int offset, int length)` | `void getBytes(uint32_t index, uint8_t* buf, uint32_t len)` |
+| `char getChar()` / `getChar(int index)` | `char getChar()` / `getChar(uint32_t index) const` |
+| `short getShort()` / `getShort(int index)` | `uint16_t getShort()` / `getShort(uint32_t index) const` |
+| `int getInt()` / `getInt(int index)` | `uint32_t getInt()` / `getInt(uint32_t index) const` |
+| `long getLong()` / `getLong(int index)` | `uint64_t getLong()` / `getLong(uint32_t index) const` |
+| `float getFloat()` / `getFloat(int index)` | `float getFloat()` / `getFloat(uint32_t index) const` |
+| `double getDouble()` / `getDouble(int index)` | `double getDouble()` / `getDouble(uint32_t index) const` |
+
+### 写入方法 (Put)
+
+| Java API | C++ 实现 |
+|----------|----------|
+| `ByteBuffer put(byte b)` | `ByteBuffer& put(uint8_t value)` |
+| `ByteBuffer put(int index, byte b)` | `ByteBuffer& put(uint8_t value, uint32_t index)` |
+| `ByteBuffer put(ByteBuffer src)` | `ByteBuffer& put(ByteBuffer* bb)` |
+| `ByteBuffer put(byte[] src)` | `ByteBuffer& putBytes(const uint8_t* buf, uint32_t len)` |
+| `ByteBuffer putChar(char value)` | `ByteBuffer& putChar(char value)` |
+| `ByteBuffer putChar(int index, char value)` | `ByteBuffer& putChar(char value, uint32_t index)` |
+| `ByteBuffer putShort(short value)` | `ByteBuffer& putShort(uint16_t value)` |
+| `ByteBuffer putShort(int index, short value)` | `ByteBuffer& putShort(uint16_t value, uint32_t index)` |
+| `ByteBuffer putInt(int value)` | `ByteBuffer& putInt(uint32_t value)` |
+| `ByteBuffer putInt(int index, int value)` | `ByteBuffer& putInt(uint32_t value, uint32_t index)` |
+| `ByteBuffer putLong(long value)` | `ByteBuffer& putLong(uint64_t value)` |
+| `ByteBuffer putLong(int index, long value)` | `ByteBuffer& putLong(uint64_t value, uint32_t index)` |
+| `ByteBuffer putFloat(float value)` | `ByteBuffer& putFloat(float value)` |
+| `ByteBuffer putFloat(int index, float value)` | `ByteBuffer& putFloat(float value, uint32_t index)` |
+| `ByteBuffer putDouble(double value)` | `ByteBuffer& putDouble(double value)` |
+| `ByteBuffer putDouble(int index, double value)` | `ByteBuffer& putDouble(double value, uint32_t index)` |
+
+### 状态管理方法
+
+| Java API | C++ 实现 |
+|----------|----------|
+| `Buffer clear()` | `ByteBuffer& clear()` |
+| `Buffer flip()` | `ByteBuffer& flip()` |
+| `Buffer rewind()` | `ByteBuffer& rewind()` |
+| `Buffer mark()` | `ByteBuffer& mark()` |
+| `Buffer reset()` | `ByteBuffer& reset()` |
+| `ByteBuffer compact()` | `ByteBuffer& compact()` |
+
+### 属性访问方法
+
+| Java API | C++ 实现 |
+|----------|----------|
+| `int capacity()` | `uint32_t capacity() const` |
+| `int position()` | `uint32_t position() const` |
+| `Buffer position(int newPosition)` | `ByteBuffer& position(uint32_t newPosition)` |
+| `int limit()` | `uint32_t limit() const` |
+| `Buffer limit(int newLimit)` | `ByteBuffer& limit(uint32_t newLimit)` |
+| `int remaining()` | `uint32_t remaining() const` |
+| `boolean hasRemaining()` | `bool hasRemaining() const` |
+
+### 其他方法
+
+| Java API | C++ 实现 |
+|----------|----------|
+| `boolean equals(Object ob)` | `bool equals(const ByteBuffer* other) const` |
+| `ByteBuffer duplicate()` | `ByteBuffer* duplicate()` |
+
+### C++ 特有功能
+
+| 功能 | 说明 |
+|------|------|
+| 移动语义 | C++11 移动构造函数和赋值运算符 |
+| 自动扩容 | 超出容量时自动扩容（Java ByteBuffer 容量固定） |
+| 命名参数 | 构造函数支持 `name` 参数用于调试 |
+| `printInfo()` | 打印缓冲区信息 |
 
 ## 参考链接
 
