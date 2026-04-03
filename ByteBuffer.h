@@ -349,6 +349,7 @@ public:
     ByteBuffer& position(uint32_t newPosition)
     {
         position_ = newPosition;
+        return *this;
     }
 
     void printInfo() const
@@ -367,7 +368,9 @@ private:
         if (!p_buffer_ || index + sizeof(T) > limit_)
             return 0;
 
-        return *((T*)&p_buffer_[index]);
+        T data;
+        std::memcpy(&data, &p_buffer_[index], sizeof(T));
+        return data;
     }
 
     template <typename T>
