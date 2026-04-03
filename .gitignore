@@ -1,0 +1,28 @@
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Build
+build/
+cmake-build-debug/
+CMakeCache.txt
+CMakeFiles/
+Makefile
+cmake_install.cmake
+
+# Binary
+*.o
+*.so
+*.a
+*.dylib
+*.dll
+*.exe
+
+# macOS
+.DS_Store
+
+# Test binary
+Test
