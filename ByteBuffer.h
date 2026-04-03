@@ -4,6 +4,8 @@
 #include <cstdint>
 #include <cstring>
 #include <cstdlib>
+#include <vector>
+#include <algorithm>
 
 #include <string>
 #include <iostream>
@@ -29,9 +31,8 @@ public:
           position_(other.position_),
           capacity_(other.capacity_),
           name_(std::move(other.name_)),
-          p_buffer_(other.p_buffer_)
+          buffer_(std::move(other.buffer_))
     {
-        other.p_buffer_ = nullptr;
         other.mark_ = MARK_UNSET;
         other.limit_ = 0;
         other.position_ = 0;
@@ -42,17 +43,12 @@ public:
     {
         if (this != &other)
         {
-            if (p_buffer_)
-            {
-                free(p_buffer_);
-            }
             mark_ = other.mark_;
             limit_ = other.limit_;
             position_ = other.position_;
             capacity_ = other.capacity_;
             name_ = std::move(other.name_);
-            p_buffer_ = other.p_buffer_;
-            other.p_buffer_ = nullptr;
+            buffer_ = std::move(other.buffer_);
             other.mark_ = MARK_UNSET;
             other.limit_ = 0;
             other.position_ = 0;
@@ -66,9 +62,9 @@ public:
           limit_(capacity),
           position_(0),
           capacity_(capacity),
-          name_(name)
+          name_(name),
+          buffer_(capacity, 0)
     {
-        p_buffer_ = static_cast<uint8_t*>(calloc(capacity_, sizeof(uint8_t)));
     }
 
     ByteBuffer(uint8_t* arr, uint32_t length, const char* name = "")
@@ -76,22 +72,14 @@ public:
           limit_(length),
           position_(0),
           capacity_(length),
-          name_(name)
+          name_(name),
+          buffer_(length, 0)
     {
-        p_buffer_ = static_cast<uint8_t*>(calloc(capacity_, sizeof(uint8_t)));
-
         putBytes(arr, capacity_);
         clear();
     }
 
-    ~ByteBuffer()
-    {
-        if (p_buffer_)
-        {
-            free(p_buffer_);
-            p_buffer_ = nullptr;
-        }
-    }
+    ~ByteBuffer() = default;
 
     // Write Methods
     ByteBuffer& put(ByteBuffer* bb)
@@ -198,18 +186,18 @@ public:
     }
     void getBytes(uint8_t* buf, uint32_t len)
     {
-        if (!p_buffer_ || position_ + len > limit_)
+        if (buffer_.empty() || position_ + len > limit_)
             return;
 
-        memcpy(buf, p_buffer_ + position_, len);
+        std::copy(buffer_.begin() + position_, buffer_.begin() + position_ + len, buf);
         position_ += len;
     }
     void getBytes(uint32_t index, uint8_t* buf, uint32_t len) const
     {
-        if (!p_buffer_ || index + len > limit_)
+        if (buffer_.empty() || index + len > limit_)
             return;
 
-        memcpy(buf, p_buffer_ + index, len);
+        std::copy(buffer_.begin() + index, buffer_.begin() + index + len, buf);
     }
     char getChar()
     {
@@ -260,7 +248,7 @@ public:
         return read<double>(index);
     }
 
-    bool equals(ByteBuffer* other)
+    bool equals(const ByteBuffer* other) const
     {
         uint32_t len = limit();
         if (len != other->limit())
@@ -330,20 +318,16 @@ public:
 
     ByteBuffer& compact()
     {
-        do
+        if (position_ >= limit_)
         {
-            if (position_ >= limit_)
-            {
-                position_ = 0;
-                break;
-            }
-
-            for (uint32_t i = 0; i < limit_ - position_; i++)
-            {
-                p_buffer_[i] = p_buffer_[position_ + i];
-            }
-            position_ = limit_ - position_;
-        } while (0);
+            position_ = 0;
+        }
+        else
+        {
+            uint32_t remaining = limit_ - position_;
+            std::copy(buffer_.begin() + position_, buffer_.begin() + limit_, buffer_.begin());
+            position_ = remaining;
+        }
 
         limit_ = capacity_;
         return *this;
@@ -401,11 +385,11 @@ private:
     template <typename T>
     T read(uint32_t index) const
     {
-        if (!p_buffer_ || index + sizeof(T) > limit_)
+        if (index + sizeof(T) > limit_)
             return 0;
 
         T data;
-        memcpy(&data, &p_buffer_[index], sizeof(T));
+        memcpy(&data, &buffer_[index], sizeof(T));
         return data;
     }
 
@@ -421,13 +405,10 @@ private:
     template<typename T>
     void append(T data)
     {
-        if (!p_buffer_)
-            return;
-
         uint32_t s = sizeof(data);
         checkSize(s);
 
-        memcpy(&p_buffer_[position_], reinterpret_cast<uint8_t*>(&data), s);
+        memcpy(&buffer_[position_], reinterpret_cast<uint8_t*>(&data), s);
         position_ += s;
     }
 
@@ -454,20 +435,14 @@ private:
 
         uint32_t newSize = capacity_ + (increase + BUFFER_SIZE_INCREASE - 1) /
                                            BUFFER_SIZE_INCREASE * BUFFER_SIZE_INCREASE;
-        uint8_t* pBuf = static_cast<uint8_t*>(realloc(p_buffer_, newSize));
-        if (!pBuf)
-        {
-            throw std::bad_alloc();
-        }
-
-        p_buffer_ = pBuf;
+        buffer_.resize(newSize, 0);
         capacity_ = newSize;
     }
 
 private:
     const uint32_t   BUFFER_SIZE_INCREASE = 2048;
     std::string      name_;
-    uint8_t*         p_buffer_;
+    std::vector<uint8_t> buffer_;
     uint32_t         mark_;
     uint32_t         limit_;
     uint32_t         position_;
