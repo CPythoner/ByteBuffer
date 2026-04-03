@@ -6,7 +6,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
-#include <cstring>
+#include <errno.h>
 
 #include <string>
 #include <iostream>
@@ -155,26 +155,18 @@ public:
     }
     void getBytes(uint8_t* buf, uint32_t len)
     {
-        // 合法性检测
         if (!p_buffer_ || position_ + len > limit_)
             return;
 
-        for (uint32_t i = 0; i < len; i++)
-        {
-            buf[i] = p_buffer_[position_++];
-        }
+        memcpy(buf, p_buffer_ + position_, len);
+        position_ += len;
     }
     void getBytes(uint32_t index, uint8_t* buf, uint32_t len) const
     {
-        // 合法性检测
         if (!p_buffer_ || index + len > limit_)
             return;
 
-        uint32_t pos = index;
-        for (uint32_t i = 0; i < len; i++)
-        {
-            buf[i] = p_buffer_[pos++];
-        }
+        memcpy(buf, p_buffer_ + index, len);
     }
     char getChar()
     {
