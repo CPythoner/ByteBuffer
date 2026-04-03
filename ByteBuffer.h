@@ -1,52 +1,92 @@
-
-
 #ifndef __BYTEBUFFER_H__
 #define __BYTEBUFFER_H__
 
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
-#include <errno.h>
+#include <cstring>
 
 #include <string>
 #include <iostream>
 
 // Default size of the buffer
-#define DEFAULT_BUFFER_SIZE 2048
+constexpr uint32_t DEFAULT_BUFFER_SIZE = 2048;
 
 class ByteBuffer
 {
 public:
+    // 禁用拷贝构造函数和赋值运算符，防止浅拷贝导致的双重释放问题
+    ByteBuffer(const ByteBuffer&) = delete;
+    ByteBuffer& operator=(const ByteBuffer&) = delete;
+
+    // 允许移动语义
+    ByteBuffer(ByteBuffer&& other) noexcept
+        : mark_(other.mark_),
+          limit_(other.limit_),
+          position_(other.position_),
+          capacity_(other.capacity_),
+          name_(std::move(other.name_)),
+          p_buffer_(other.p_buffer_)
+    {
+        other.p_buffer_ = nullptr;
+        other.mark_ = -1;
+        other.limit_ = 0;
+        other.position_ = 0;
+        other.capacity_ = 0;
+    }
+
+    ByteBuffer& operator=(ByteBuffer&& other) noexcept
+    {
+        if (this != &other)
+        {
+            if (p_buffer_)
+            {
+                free(p_buffer_);
+            }
+            mark_ = other.mark_;
+            limit_ = other.limit_;
+            position_ = other.position_;
+            capacity_ = other.capacity_;
+            name_ = std::move(other.name_);
+            p_buffer_ = other.p_buffer_;
+            other.p_buffer_ = nullptr;
+            other.mark_ = -1;
+            other.limit_ = 0;
+            other.position_ = 0;
+            other.capacity_ = 0;
+        }
+        return *this;
+    }
+
     ByteBuffer(uint32_t capacity = DEFAULT_BUFFER_SIZE, const char* name = "")
         : mark_(-1),
-        limit_(capacity),
-        position_(0),
-        capacity_(capacity),
-        name_(name)
+          limit_(capacity),
+          position_(0),
+          capacity_(capacity),
+          name_(name)
     {
-        p_buffer_ = NULL;
-        p_buffer_ = (uint8_t*)calloc(capacity_, sizeof(uint8_t));
+        p_buffer_ = static_cast<uint8_t*>(calloc(capacity_, sizeof(uint8_t)));
     }
 
     ByteBuffer(uint8_t* arr, uint32_t length, const char* name = "")
         : mark_(-1),
-        limit_(length),
-        position_(0),
-        capacity_(length),
-        name_(name)
+          limit_(length),
+          position_(0),
+          capacity_(length),
+          name_(name)
     {
-        p_buffer_ = NULL;
-        p_buffer_ = (uint8_t*)calloc(capacity_, sizeof(uint8_t));
+        p_buffer_ = static_cast<uint8_t*>(calloc(capacity_, sizeof(uint8_t)));
 
         putBytes(arr, capacity_);
         clear();
     }
+
     ~ByteBuffer()
     {
         if (p_buffer_)
         {
             free(p_buffer_);
-            p_buffer_ = NULL;
+            p_buffer_ = nullptr;
         }
     }
 
@@ -307,7 +347,7 @@ public:
     }
 
 
-    bool hasRemaining()
+    bool hasRemaining() const
     {
         return limit_ > position_;
     }
@@ -384,7 +424,7 @@ private:
         uint32_t s = sizeof(data);
         checkSize(s);
 
-        memcpy(&p_buffer_[position_], (uint8_t*)&data, s);
+        memcpy(&p_buffer_[position_], reinterpret_cast<uint8_t*>(&data), s);
         position_ += s;
     }
 
@@ -411,7 +451,7 @@ private:
 
         uint32_t newSize = capacity_ + (increase + BUFFER_SIZE_INCREASE - 1) /
                                            BUFFER_SIZE_INCREASE * BUFFER_SIZE_INCREASE;
-        uint8_t* pBuf = (uint8_t*)realloc(p_buffer_, newSize);
+        uint8_t* pBuf = static_cast<uint8_t*>(realloc(p_buffer_, newSize));
         if (!pBuf)
         {
             std::cout << "relloc failed!" << std::endl;
