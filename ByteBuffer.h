@@ -1,9 +1,9 @@
 #ifndef __BYTEBUFFER_H__
 #define __BYTEBUFFER_H__
 
-#include <stdlib.h>
-#include <stdint.h>
+#include <cstdint>
 #include <cstring>
+#include <cstdlib>
 
 #include <string>
 #include <iostream>
