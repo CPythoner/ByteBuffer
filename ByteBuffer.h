@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
+#include <cstring>
 
 #include <string>
 #include <iostream>
@@ -369,7 +370,7 @@ private:
             return 0;
 
         T data;
-        std::memcpy(&data, &p_buffer_[index], sizeof(T));
+        memcpy(&data, &p_buffer_[index], sizeof(T));
         return data;
     }
 
