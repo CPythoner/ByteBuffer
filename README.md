@@ -2,79 +2,79 @@
 
 [![CI](https://github.com/CPythoner/ByteBuffer/actions/workflows/ci.yml/badge.svg)](https://github.com/CPythoner/ByteBuffer/actions/workflows/ci.yml)
 
-C++ 实现的 Java NIO ByteBuffer 功能，支持跨平台（Windows、macOS、Linux）。
+A C++ implementation of Java NIO ByteBuffer, supporting cross-platform use (Windows, macOS, Linux).
 
-> **Header-Only**：只需包含 `ByteBuffer.h` 即可使用，无需编译链接额外的库文件。
+> **Header-Only**: Simply include `ByteBuffer.h` to use, no need to compile or link additional library files.
 
-## 目录
+## Table of Contents
 
 - [ByteBuffer](#bytebuffer)
-  - [目录](#目录)
-  - [介绍](#介绍)
-  - [特性](#特性)
-  - [快速开始](#快速开始)
-    - [创建 ByteBuffer](#创建-bytebuffer)
-    - [写入数据](#写入数据)
-    - [读取数据](#读取数据)
-    - [状态切换](#状态切换)
-  - [API 参考](#api-参考)
-    - [创建方法](#创建方法)
-    - [写入方法](#写入方法)
-    - [读取方法](#读取方法)
-    - [状态方法](#状态方法)
-    - [其他方法](#其他方法)
-    - [Java 兼容接口](#java-兼容接口)
-      - [数组访问方法](#数组访问方法)
-      - [直接缓冲区方法](#直接缓冲区方法)
-      - [字节序方法](#字节序方法)
-      - [比较和辅助方法](#比较和辅助方法)
-  - [构建与测试](#构建与测试)
-    - [依赖](#依赖)
-    - [使用方法（Header-Only）](#使用方法header-only)
-    - [构建（仅用于测试）](#构建仅用于测试)
-    - [CI 状态](#ci-状态)
-  - [注意事项](#注意事项)
-  - [参考链接](#参考链接)
+  - [Table of Contents](#table-of-contents)
+  - [Introduction](#introduction)
+  - [Features](#features)
+  - [Quick Start](#quick-start)
+    - [Creating ByteBuffer](#creating-bytebuffer)
+    - [Writing Data](#writing-data)
+    - [Reading Data](#reading-data)
+    - [State Transitions](#state-transitions)
+  - [API Reference](#api-reference)
+    - [Creation Methods](#creation-methods)
+    - [Write Methods](#write-methods)
+    - [Read Methods](#read-methods)
+    - [State Methods](#state-methods)
+    - [Other Methods](#other-methods)
+    - [Java Compatibility APIs](#java-compatibility-apis)
+      - [Array Access Methods](#array-access-methods)
+      - [Direct Buffer Methods](#direct-buffer-methods)
+      - [Byte Order Methods](#byte-order-methods)
+      - [Comparison and Utility Methods](#comparison-and-utility-methods)
+  - [Build and Test](#build-and-test)
+    - [Requirements](#requirements)
+    - [Usage (Header-Only)](#usage-header-only)
+    - [Build (For Testing Only)](#build-for-testing-only)
+    - [CI Status](#ci-status)
+  - [Caveats](#caveats)
+  - [References](#references)
 
-## 介绍
+## Introduction
 
-ByteBuffer 是一个字节缓存区，提供了一系列 put 和 get 方法，可以方便地将各种类型的数据存入缓存区或从缓存区读取数据。底层存储结构是字节数组，所有操作都基于该数组。
+ByteBuffer is a byte buffer that provides a series of put and get methods for easily storing and retrieving various types of data. The underlying storage structure is a byte array, and all operations are based on this array.
 
-本实现参考了 Java NIO 的 ByteBuffer 类，使用 C++11 实现，支持跨平台使用。
+This implementation is based on Java NIO's ByteBuffer class, implemented in C++11 for cross-platform use.
 
-## 特性
+## Features
 
-- ✅ **Header-Only**：只需包含 `ByteBuffer.h` 即可使用
-- ✅ 支持多种数据类型的读写（uint8_t、char、short、int、long、float、double）
-- ✅ 自动扩容机制，无需担心缓冲区溢出
-- ✅ 支持链式操作，所有 put 方法返回 `ByteBuffer&`
-- ✅ 完整的状态管理（position、limit、mark、capacity）
-- ✅ 移动语义支持，禁用拷贝防止资源泄漏
-- ✅ 跨平台支持（Windows、macOS、Linux）
-- ✅ 完整的 CI 测试覆盖
+- ✅ **Header-Only**: Simply include `ByteBuffer.h` to use
+- ✅ Supports reading and writing of multiple data types (uint8_t, char, short, int, long, float, double)
+- ✅ Automatic expansion mechanism, no need to worry about buffer overflow
+- ✅ Supports chained operations, all put methods return `ByteBuffer&`
+- ✅ Complete state management (position, limit, mark, capacity)
+- ✅ Move semantics support, copy disabled to prevent resource leaks
+- ✅ Cross-platform support (Windows, macOS, Linux)
+- ✅ Complete CI test coverage
 
-## 快速开始
+## Quick Start
 
-### 创建 ByteBuffer
+### Creating ByteBuffer
 
 ```cpp
 #include "ByteBuffer.h"
 
-// 创建默认大小（2048 字节）的 ByteBuffer
+// Create default size (2048 bytes) ByteBuffer
 ByteBuffer bb1;
 
-// 创建指定容量的 ByteBuffer
+// Create ByteBuffer with specified capacity
 ByteBuffer bb2(1024, "myBuffer");
 
-// 从现有数组创建 ByteBuffer
+// Create ByteBuffer from existing array
 uint8_t data[] = {1, 2, 3, 4, 5};
 ByteBuffer bb3(data, sizeof(data), "fromArray");
 ```
 
-### 写入数据
+### Writing Data
 
 ```cpp
-// 链式写入
+// Chain writing
 bb.put(42)
   .putChar('A')
   .putShort(1000)
@@ -82,21 +82,21 @@ bb.put(42)
   .putFloat(3.14f)
   .putDouble(2.71828);
 
-// 写入字节数组
+// Write byte array
 uint8_t buf[] = {1, 2, 3, 4, 5};
 bb.putBytes(buf, sizeof(buf));
 
-// 在指定位置写入
-bb.putInt(999, 0);  // 在索引 0 处写入
+// Write at specified position
+bb.putInt(999, 0);  // Write at index 0
 ```
 
-### 读取数据
+### Reading Data
 
 ```cpp
-// 切换到读取模式
+// Switch to read mode
 bb.flip();
 
-// 顺序读取
+// Sequential reading
 uint8_t a = bb.get();
 char c = bb.getChar();
 uint16_t s = bb.getShort();
@@ -104,190 +104,190 @@ uint32_t i = bb.getInt();
 float f = bb.getFloat();
 double d = bb.getDouble();
 
-// 从指定位置读取（不改变 position）
+// Read from specified position (does not change position)
 uint8_t x = bb.get(5);
 uint32_t y = bb.getInt(10);
 
-// 读取字节数组
+// Read byte array
 uint8_t outBuf[10];
 bb.getBytes(outBuf, 10);
-bb.getBytes(5, outBuf, 5);  // 从索引 5 开始读取
+bb.getBytes(5, outBuf, 5);  // Read starting from index 5
 ```
 
-### 状态切换
+### State Transitions
 
 ```cpp
-// 写入状态 -> 读取状态
+// Write state -> Read state
 bb.flip();
 
-// 重置为初始状态（可继续写入）
+// Reset to initial state (can continue writing)
 bb.clear();
 
-// 标记当前位置
+// Mark current position
 bb.mark();
 
-// 回到标记位置
+// Return to marked position
 bb.reset();
 
-// 回到起始位置
+// Return to starting position
 bb.rewind();
 
-// 压缩缓冲区（删除已读数据）
+// Compact buffer (remove read data)
 bb.compact();
 ```
 
-## API 参考
+## API Reference
 
-### 创建方法
+### Creation Methods
 
-| 方法 | 描述 |
-|------|------|
-| `ByteBuffer(capacity=2048, name="")` | 创建指定容量的 ByteBuffer |
-| `ByteBuffer(arr, length, name="")` | 从字节数组创建 ByteBuffer |
-| `~ByteBuffer()` | 析构函数，自动释放内存 |
+| Method | Description |
+|--------|-------------|
+| `ByteBuffer(capacity=2048, name="")` | Create ByteBuffer with specified capacity |
+| `ByteBuffer(arr, length, name="")` | Create ByteBuffer from byte array |
+| `~ByteBuffer()` | Destructor, automatically frees memory |
 
-### 写入方法
+### Write Methods
 
-| 方法 | 描述 |
-|------|------|
-| `put(uint8_t value)` | 写入一个字节 |
-| `put(uint8_t value, index)` | 在指定位置写入一个字节 |
-| `putBytes(buf, len)` | 写入字节数组 |
-| `putBytes(buf, len, index)` | 在指定位置写入字节数组 |
-| `putChar(value)` | 写入 char |
-| `putShort(value)` | 写入 uint16_t |
-| `putInt(value)` | 写入 uint32_t |
-| `putLong(value)` | 写入 uint64_t |
-| `putFloat(value)` | 写入 float |
-| `putDouble(value)` | 写入 double |
+| Method | Description |
+|--------|-------------|
+| `put(uint8_t value)` | Write a byte |
+| `put(uint8_t value, index)` | Write a byte at specified position |
+| `putBytes(buf, len)` | Write byte array |
+| `putBytes(buf, len, index)` | Write byte array at specified position |
+| `putChar(value)` | Write char |
+| `putShort(value)` | Write uint16_t |
+| `putInt(value)` | Write uint32_t |
+| `putLong(value)` | Write uint64_t |
+| `putFloat(value)` | Write float |
+| `putDouble(value)` | Write double |
 
-**注意**：所有 put 方法都返回 `ByteBuffer&`，支持链式调用。
+**Note**: All put methods return `ByteBuffer&`, supporting chained calls.
 
-### 读取方法
+### Read Methods
 
-| 方法 | 描述 |
-|------|------|
-| `get()` | 读取一个字节 |
-| `get(index)` | 从指定位置读取一个字节（const） |
-| `getBytes(buf, len)` | 读取字节数组到缓冲区 |
-| `getBytes(index, buf, len)` | 从指定位置读取字节数组（const） |
-| `getChar()` / `getChar(index)` | 读取 char |
-| `getShort()` / `getShort(index)` | 读取 uint16_t |
-| `getInt()` / `getInt(index)` | 读取 uint32_t |
-| `getLong()` / `getLong(index)` | 读取 uint64_t |
-| `getFloat()` / `getFloat(index)` | 读取 float |
-| `getDouble()` / `getDouble(index)` | 读取 double |
+| Method | Description |
+|--------|-------------|
+| `get()` | Read a byte |
+| `get(index)` | Read a byte from specified position (const) |
+| `getBytes(buf, len)` | Read byte array to buffer |
+| `getBytes(index, buf, len)` | Read byte array from specified position (const) |
+| `getChar()` / `getChar(index)` | Read char |
+| `getShort()` / `getShort(index)` | Read uint16_t |
+| `getInt()` / `getInt(index)` | Read uint32_t |
+| `getLong()` / `getLong(index)` | Read uint64_t |
+| `getFloat()` / `getFloat(index)` | Read float |
+| `getDouble()` / `getDouble(index)` | Read double |
 
-**注意**：带 `index` 参数的方法不会改变 `position` 的值。
+**Note**: Methods with `index` parameter do not change the `position` value.
 
-### 状态方法
+### State Methods
 
-| 方法 | 描述 |
-|------|------|
-| `capacity()` | 返回缓冲区容量（const） |
-| `position()` | 返回当前位置（const） |
-| `position(newPos)` | 设置新位置 |
-| `limit()` | 返回限制值（const） |
-| `limit(newLimit)` | 设置新限制 |
-| `flip()` | 切换到读取模式 |
-| `clear()` | 重置为初始状态 |
-| `mark()` | 标记当前位置 |
-| `reset()` | 回到标记位置 |
-| `rewind()` | 回到起始位置 |
-| `compact()` | 压缩缓冲区 |
-| `hasRemaining()` | 是否还有数据（const） |
-| `remaining()` | 剩余字节数（const） |
+| Method | Description |
+|--------|-------------|
+| `capacity()` | Return buffer capacity (const) |
+| `position()` | Return current position (const) |
+| `position(newPos)` | Set new position |
+| `limit()` | Return limit value (const) |
+| `limit(newLimit)` | Set new limit |
+| `flip()` | Switch to read mode |
+| `clear()` | Reset to initial state |
+| `mark()` | Mark current position |
+| `reset()` | Return to marked position |
+| `rewind()` | Return to starting position |
+| `compact()` | Compact buffer |
+| `hasRemaining()` | Check if data remains (const) |
+| `remaining()` | Return remaining bytes (const) |
 
-### 其他方法
+### Other Methods
 
-| 方法 | 描述 |
-|------|------|
-| `equals(other)` | 比较两个 ByteBuffer 是否相等 |
-| `duplicate()` | 复制一个 ByteBuffer |
-| `printInfo()` | 打印缓冲区信息 |
+| Method | Description |
+|--------|-------------|
+| `equals(other)` | Compare if two ByteBuffers are equal |
+| `duplicate()` | Duplicate a ByteBuffer |
+| `printInfo()` | Print buffer information |
 
-### Java 兼容接口
+### Java Compatibility APIs
 
-#### 数组访问方法
+#### Array Access Methods
 
-| 方法 | 描述 |
-|------|------|
-| `hasArray()` | 检查是否有可访问数组（始终返回 true） |
-| `array()` | 返回底层字节数组指针 |
-| `const array() const` | 返回底层字节数组指针（const 版本） |
-| `arrayOffset()` | 返回数组偏移量（始终返回 0） |
+| Method | Description |
+|--------|-------------|
+| `hasArray()` | Check if array is accessible (always returns true) |
+| `array()` | Return underlying byte array pointer |
+| `const array() const` | Return underlying byte array pointer (const version) |
+| `arrayOffset()` | Return array offset (always returns 0) |
 
-#### 直接缓冲区方法
+#### Direct Buffer Methods
 
-| 方法 | 描述 |
-|------|------|
-| `isDirect()` | 判断是否为直接缓冲区（当前实现返回 false） |
+| Method | Description |
+|--------|-------------|
+| `isDirect()` | Check if direct buffer (currently returns false) |
 
-#### 字节序方法
+#### Byte Order Methods
 
-| 方法 | 描述 |
-|------|------|
-| `ByteOrder` | 枚举类型：`ORDER_BIG_ENDIAN` / `ORDER_LITTLE_ENDIAN` |
-| `order()` | 获取当前字节序 |
-| `order(ByteOrder)` | 设置字节序，返回 `ByteBuffer&` 支持链式调用 |
-| `static nativeOrder()` | 获取主机字节序 |
+| Method | Description |
+|--------|-------------|
+| `ByteOrder` | Enum type: `ORDER_BIG_ENDIAN` / `ORDER_LITTLE_ENDIAN` |
+| `order()` | Get current byte order |
+| `order(ByteOrder)` | Set byte order, returns `ByteBuffer&` for chaining |
+| `static nativeOrder()` | Get host byte order |
 
-**字节序使用示例：**
+**Byte Order Usage Example:**
 
 ```cpp
 #include "ByteBuffer.h"
 
 ByteBuffer bb;
 
-// 设置为大端字节序（网络字节序）
+// Set to big-endian byte order (network byte order)
 bb.order(ByteOrder::ORDER_BIG_ENDIAN);
 
-// 写入数据（自动按大端字节序存储）
-bb.putInt(0x12345678);  // 缓冲区中字节顺序：12 34 56 78
+// Write data (automatically stored in big-endian order)
+bb.putInt(0x12345678);  // Byte order in buffer: 12 34 56 78
 
-// 切换为小端字节序
+// Switch to little-endian byte order
 bb.order(ByteOrder::ORDER_LITTLE_ENDIAN);
-bb.putInt(0x12345678);  // 缓冲区中字节顺序：78 56 34 12
+bb.putInt(0x12345678);  // Byte order in buffer: 78 56 34 12
 
-// 读取时自动转换
+// Automatic conversion when reading
 bb.flip();
 bb.order(ByteOrder::ORDER_BIG_ENDIAN);
-uint32_t value = bb.getInt();  // 正确读取 0x12345678
+uint32_t value = bb.getInt();  // Correctly reads 0x12345678
 ```
 
-#### 比较和辅助方法
+#### Comparison and Utility Methods
 
-| 方法 | 描述 |
-|------|------|
-| `compareTo(const ByteBuffer&)` | 按字典序比较两个缓冲区，返回负数/0/正数 |
-| `hash()` | 计算缓冲区内容的哈希值 |
-| `toString()` | 返回缓冲区的字符串表示 |
+| Method | Description |
+|--------|-------------|
+| `compareTo(const ByteBuffer&)` | Compare two buffers lexicographically, returns negative/0/positive |
+| `hash()` | Calculate hash value of buffer content |
+| `toString()` | Return string representation of buffer |
 
-**使用示例：**
+**Usage Example:**
 
 ```cpp
-// 比较缓冲区
+// Compare buffers
 ByteBuffer bb1, bb2;
-// ... 填充数据 ...
-int result = bb1.compareTo(bb2);  // <0: bb1<bb2, =0: 相等，>0: bb1>bb2
+// ... fill data ...
+int result = bb1.compareTo(bb2);  // <0: bb1<bb2, =0: equal, >0: bb1>bb2
 
-// 哈希值（可用于 unordered_map 等容器）
+// Hash value (can be used in unordered_map, etc.)
 size_t h = bb1.hash();
 
-// 字符串表示
+// String representation
 std::string str = bb1.toString();  // "ByteBuffer[pos=5 lim=10 cap=100]"
 ```
 
-## 构建与测试
+## Build and Test
 
-### 依赖
+### Requirements
 
-- C++11 兼容编译器
-- CMake 3.10+（仅用于构建测试）
+- C++11 compatible compiler
+- CMake 3.10+ (for building tests only)
 
-### 使用方法（Header-Only）
+### Usage (Header-Only)
 
-由于是 Header-Only 库，只需将 `ByteBuffer.h` 复制到你的项目中即可使用：
+Since this is a header-only library, simply copy `ByteBuffer.h` to your project to use:
 
 ```cpp
 #include "ByteBuffer.h"
@@ -299,11 +299,11 @@ int main() {
 }
 ```
 
-**无需编译链接额外的库文件**，因为所有实现都在头文件中。
+**No need to compile or link additional library files** since all implementations are in the header file.
 
-### 构建（仅用于测试）
+### Build (For Testing Only)
 
-如果你想运行测试：
+If you want to run tests:
 
 ```bash
 mkdir build && cd build
@@ -312,35 +312,35 @@ make
 ./ByteBuffer
 ```
 
-或使用 CTest：
+Or use CTest:
 
 ```bash
 ctest --output-on-failure
 ```
 
-### CI 状态
+### CI Status
 
-本项目使用 GitHub Actions 进行持续集成，支持以下平台：
+This project uses GitHub Actions for continuous integration, supporting the following platforms:
 
-| 平台 | Release | Debug |
-|------|---------|-------|
+| Platform | Release | Debug |
+|----------|---------|-------|
 | Ubuntu (ubuntu-latest) | ✅ | ✅ |
 | macOS (macos-latest) | ✅ | ✅ |
 | Windows (windows-latest) | ✅ | ✅ |
 
-## 注意事项
+## Caveats
 
-1. **拷贝控制**：ByteBuffer 禁用了拷贝构造函数和拷贝赋值运算符，防止浅拷贝导致的双重释放问题。如需复制，请使用 `duplicate()` 方法或移动语义。
+1. **Copy Control**: ByteBuffer disables copy constructor and copy assignment operator to prevent double-free issues caused by shallow copy. If you need to copy, please use the `duplicate()` method or move semantics.
 
-2. **内存对齐**：对于多字节类型的读写，某些架构（如 ARM）可能要求内存对齐。未对齐的访问可能导致性能下降或崩溃。建议在处理大量数据时确保数据对齐。
+2. **Memory Alignment**: For multi-byte type read/write operations, some architectures (such as ARM) may require memory alignment. Unaligned access may cause performance degradation or crashes. It is recommended to ensure data alignment when handling large amounts of data.
 
-3. **字节序**：本实现支持字节序设置，默认使用主机字节序。可通过 `order()` 方法设置大端或小端字节序，适用于跨平台数据序列化和网络传输。
+3. **Byte Order**: This implementation supports byte order settings and defaults to host byte order. You can set big-endian or little-endian byte order through the `order()` method, which is suitable for cross-platform data serialization and network transmission.
 
-4. **异常处理**：当内存分配失败时，会抛出 `std::bad_alloc` 异常。请确保在调用时进行适当的异常处理。
+4. **Exception Handling**: When memory allocation fails, a `std::bad_alloc` exception will be thrown. Please ensure proper exception handling when calling.
 
-## 参考链接
+## References
 
 - [Java ByteBuffer Documentation](https://docs.oracle.com/javase/7/docs/api/java/nio/ByteBuffer.html)
-- [java.nio.Buffer 中的 flip() 方法](https://blog.csdn.net/hbtj_1216/article/details/53129588)
-- [ByteBuffer 常用方法详解](https://blog.csdn.net/moakun/article/details/80630477)
+- [java.nio.Buffer flip() method](https://blog.csdn.net/hbtj_1216/article/details/53129588)
+- [ByteBuffer common methods](https://blog.csdn.net/moakun/article/details/80630477)
 - [Netty ByteBuf](https://netty.io/4.0/api/io/netty/buffer/ByteBuf.html)
