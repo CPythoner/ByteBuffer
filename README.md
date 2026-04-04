@@ -6,6 +6,10 @@ A C++ implementation of Java NIO ByteBuffer, supporting cross-platform use (Wind
 
 > **Header-Only**: Simply include `ByteBuffer.h` to use, no need to compile or link additional library files.
 
+---
+
+**🌐 Language:** [English](README.md) | [中文](README_CN.md)
+
 ## Table of Contents
 
 - [ByteBuffer](#bytebuffer)

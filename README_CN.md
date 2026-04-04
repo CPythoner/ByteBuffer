@@ -6,6 +6,10 @@ C++ 实现的 Java NIO ByteBuffer 功能，支持跨平台（Windows、macOS、L
 
 > **Header-Only**：只需包含 `ByteBuffer.h` 即可使用，无需编译链接额外的库文件。
 
+---
+
+**🌐 语言:** [English](README.md) | [中文](README_CN.md)
+
 ## 目录
 
 - [ByteBuffer](#bytebuffer)
