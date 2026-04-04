@@ -17,6 +17,12 @@ constexpr uint32_t DEFAULT_BUFFER_SIZE = 2048;
 // Mark value indicating no mark is set
 constexpr uint32_t MARK_UNSET = UINT32_MAX;
 
+// Byte order enumeration for cross-platform data serialization
+enum class ByteOrder {
+    ORDER_BIG_ENDIAN,    // Most significant byte first (network byte order)
+    ORDER_LITTLE_ENDIAN  // Least significant byte first
+};
+
 class ByteBuffer
 {
 public:
@@ -381,7 +387,77 @@ public:
                   << "capacity(" << capacity_ << ")." << std::endl;
     }
 
+    // Array access methods (Java compatibility)
+    bool hasArray() const { return true; }
+    uint8_t* array() { return buffer_.data(); }
+    const uint8_t* array() const { return buffer_.data(); }
+    uint32_t arrayOffset() const { return 0; }
+
+    // Direct buffer check (Java compatibility)
+    bool isDirect() const { return false; }
+
+    // Byte order methods (Java compatibility)
+    ByteOrder order() const { return byteOrder_; }
+    ByteBuffer& order(ByteOrder order) { byteOrder_ = order; return *this; }
+
+    // Compare buffers (Java compareTo compatibility)
+    int compareTo(const ByteBuffer& other) const
+    {
+        uint32_t len = std::min(limit_, other.limit_);
+        for (uint32_t i = 0; i < len; i++)
+        {
+            uint8_t a = buffer_[i];
+            uint8_t b = other.buffer_[i];
+            if (a != b)
+                return static_cast<int>(a) - static_cast<int>(b);
+        }
+        return static_cast<int>(limit_) - static_cast<int>(other.limit_);
+    }
+
+    // Hash function for use in unordered containers
+    size_t hash() const
+    {
+        size_t h = 0;
+        for (uint32_t i = 0; i < limit_; i++)
+        {
+            h = h * 31 + buffer_[i];
+        }
+        return h;
+    }
+
+    // String representation (hex dump)
+    std::string toString() const
+    {
+        char buf[64];
+        std::snprintf(buf, sizeof(buf), "ByteBuffer[pos=%u lim=%u cap=%u]",
+                      position_, limit_, capacity_);
+        return std::string(buf);
+    }
+
+    // Static method to get native byte order
+    static ByteOrder nativeOrder()
+    {
+        uint16_t test = 0x0001;
+        return (*reinterpret_cast<uint8_t*>(&test) == 0x01)
+               ? ByteOrder::ORDER_LITTLE_ENDIAN
+               : ByteOrder::ORDER_BIG_ENDIAN;
+    }
+
 private:
+    // Byte swap helper for endianness conversion
+    template<typename T>
+    static T byteswap(T value)
+    {
+        T result = 0;
+        uint8_t* src = reinterpret_cast<uint8_t*>(&value);
+        uint8_t* dst = reinterpret_cast<uint8_t*>(&result);
+        for (uint32_t i = 0; i < sizeof(T); i++)
+        {
+            dst[i] = src[sizeof(T) - 1 - i];
+        }
+        return result;
+    }
+
     template <typename T>
     T read(uint32_t index) const
     {
@@ -390,6 +466,12 @@ private:
 
         T data;
         memcpy(&data, &buffer_[index], sizeof(T));
+
+        // Apply byte order conversion if needed
+        if (byteOrder_ != nativeOrder())
+        {
+            data = byteswap(data);
+        }
         return data;
     }
 
@@ -408,7 +490,16 @@ private:
         uint32_t s = sizeof(data);
         checkSize(s);
 
-        memcpy(&buffer_[position_], reinterpret_cast<uint8_t*>(&data), s);
+        // Apply byte order conversion if needed
+        if (byteOrder_ != nativeOrder())
+        {
+            T swapped = byteswap(data);
+            memcpy(&buffer_[position_], reinterpret_cast<uint8_t*>(&swapped), s);
+        }
+        else
+        {
+            memcpy(&buffer_[position_], reinterpret_cast<uint8_t*>(&data), s);
+        }
         position_ += s;
     }
 
@@ -447,6 +538,7 @@ private:
     uint32_t         limit_;
     uint32_t         position_;
     uint32_t         capacity_;
+    ByteOrder        byteOrder_ = nativeOrder();  // Default to native byte order
 
 };
 

@@ -658,3 +658,372 @@ TEST_CASE("ByteBuffer::TypeTraits_NoexceptMove", "[TypeTraits]")
     static_assert(std::is_nothrow_move_constructible<ByteBuffer>::value,
                   "ByteBuffer move constructor should be noexcept");
 }
+
+// ============================================================================
+// Java Compatibility API Tests
+// ============================================================================
+
+// ----------------------------------------------------------------------------
+// hasArray, array, arrayOffset Tests
+// ----------------------------------------------------------------------------
+TEST_CASE("ByteBuffer::hasArray", "[JavaCompat]")
+{
+    ByteBuffer bb;
+    REQUIRE(bb.hasArray() == true);
+}
+
+TEST_CASE("ByteBuffer::array", "[JavaCompat]")
+{
+    ByteBuffer bb;
+    bb.put(1);
+    bb.put(2);
+    bb.put(3);
+
+    uint8_t* arr = bb.array();
+    REQUIRE(arr != nullptr);
+    REQUIRE(arr[0] == 1);
+    REQUIRE(arr[1] == 2);
+    REQUIRE(arr[2] == 3);
+}
+
+TEST_CASE("ByteBuffer::array_const", "[JavaCompat]")
+{
+    ByteBuffer bb;
+    bb.put(10);
+    bb.put(20);
+
+    const ByteBuffer& cbb = bb;
+    const uint8_t* arr = cbb.array();
+    REQUIRE(arr != nullptr);
+    REQUIRE(arr[0] == 10);
+    REQUIRE(arr[1] == 20);
+}
+
+TEST_CASE("ByteBuffer::arrayOffset", "[JavaCompat]")
+{
+    ByteBuffer bb;
+    REQUIRE(bb.arrayOffset() == 0);
+}
+
+// ----------------------------------------------------------------------------
+// isDirect Tests
+// ----------------------------------------------------------------------------
+TEST_CASE("ByteBuffer::isDirect", "[JavaCompat]")
+{
+    ByteBuffer bb;
+    REQUIRE(bb.isDirect() == false);
+}
+
+// ----------------------------------------------------------------------------
+// ByteOrder Tests
+// ----------------------------------------------------------------------------
+TEST_CASE("ByteBuffer::nativeOrder", "[JavaCompat]")
+{
+    ByteOrder order = ByteBuffer::nativeOrder();
+    // Should be either BIG_ENDIAN or LITTLE_ENDIAN
+    REQUIRE((order == ByteOrder::ORDER_BIG_ENDIAN ||
+             order == ByteOrder::ORDER_LITTLE_ENDIAN));
+}
+
+TEST_CASE("ByteBuffer::order_getter", "[JavaCompat]")
+{
+    ByteBuffer bb;
+    // Default should be native order
+    REQUIRE(bb.order() == ByteBuffer::nativeOrder());
+}
+
+TEST_CASE("ByteBuffer::order_setter", "[JavaCompat]")
+{
+    ByteBuffer bb;
+    ByteOrder original = bb.order();
+
+    // Set to opposite of original
+    ByteOrder newOrder = (original == ByteOrder::ORDER_BIG_ENDIAN)
+                         ? ByteOrder::ORDER_LITTLE_ENDIAN
+                         : ByteOrder::ORDER_BIG_ENDIAN;
+
+    bb.order(newOrder);
+    REQUIRE(bb.order() == newOrder);
+}
+
+TEST_CASE("ByteBuffer::order_chainable", "[JavaCompat]")
+{
+    ByteBuffer bb;
+
+    // Test chainable
+    ByteBuffer& ref = bb.order(ByteOrder::ORDER_BIG_ENDIAN);
+    REQUIRE(&ref == &bb);
+}
+
+// ----------------------------------------------------------------------------
+// ByteOrder Data Serialization Tests
+// ----------------------------------------------------------------------------
+TEST_CASE("ByteBuffer::ByteOrder_Basic", "[JavaCompat]")
+{
+    ByteBuffer bb;
+
+    // Write with native order
+    bb.putShort(0x1234);
+
+    bb.flip();
+
+    // Read with native order
+    REQUIRE(bb.getShort() == 0x1234);
+}
+
+TEST_CASE("ByteBuffer::ByteOrder_BigEndian", "[JavaCompat]")
+{
+    ByteBuffer bb;
+    bb.order(ByteOrder::ORDER_BIG_ENDIAN);
+
+    // Write 32-bit value with big endian
+    bb.putInt(0x12345678);
+
+    // Verify byte layout in buffer (big endian: most significant byte first)
+    uint8_t* arr = bb.array();
+    REQUIRE(arr[0] == 0x12);
+    REQUIRE(arr[1] == 0x34);
+    REQUIRE(arr[2] == 0x56);
+    REQUIRE(arr[3] == 0x78);
+
+    bb.flip();
+    bb.order(ByteOrder::ORDER_BIG_ENDIAN);  // Read with same order
+    REQUIRE(bb.getInt() == 0x12345678);
+}
+
+TEST_CASE("ByteBuffer::ByteOrder_LittleEndian", "[JavaCompat]")
+{
+    ByteBuffer bb;
+    bb.order(ByteOrder::ORDER_LITTLE_ENDIAN);
+
+    // Write 32-bit value with little endian
+    bb.putInt(0x12345678);
+
+    // Verify byte layout in buffer (little endian: least significant byte first)
+    uint8_t* arr = bb.array();
+    REQUIRE(arr[0] == 0x78);
+    REQUIRE(arr[1] == 0x56);
+    REQUIRE(arr[2] == 0x34);
+    REQUIRE(arr[3] == 0x12);
+
+    bb.flip();
+    bb.order(ByteOrder::ORDER_LITTLE_ENDIAN);  // Read with same order
+    REQUIRE(bb.getInt() == 0x12345678);
+}
+
+TEST_CASE("ByteBuffer::ByteOrder_SwitchOrder", "[JavaCompat]")
+{
+    ByteBuffer bb;
+
+    // Write with big endian
+    bb.order(ByteOrder::ORDER_BIG_ENDIAN);
+    bb.putShort(0x1234);
+
+    // Read with little endian (should get swapped value)
+    bb.flip();
+    bb.order(ByteOrder::ORDER_LITTLE_ENDIAN);
+
+    // 0x1234 in big endian, read as little endian = 0x3412
+    REQUIRE(bb.getShort() == 0x3412);
+}
+
+TEST_CASE("ByteBuffer::ByteOrder_MultiType", "[JavaCompat]")
+{
+    ByteBuffer bb;
+    bb.order(ByteOrder::ORDER_BIG_ENDIAN);
+
+    bb.putShort(0x1234);
+    bb.putInt(0x56789ABC);
+    bb.putLong(0xDEF0123456789ABC);
+
+    bb.flip();
+    bb.order(ByteOrder::ORDER_BIG_ENDIAN);
+
+    REQUIRE(bb.getShort() == 0x1234);
+    REQUIRE(bb.getInt() == 0x56789ABC);
+    REQUIRE(bb.getLong() == 0xDEF0123456789ABC);
+}
+
+TEST_CASE("ByteBuffer::ByteOrder_Float", "[JavaCompat]")
+{
+    ByteBuffer bb;
+    bb.order(ByteOrder::ORDER_BIG_ENDIAN);
+
+    float original = 3.14159f;
+    bb.putFloat(original);
+
+    bb.flip();
+    bb.order(ByteOrder::ORDER_BIG_ENDIAN);
+
+    const float EPS = 1e-6f;
+    REQUIRE(fabs(bb.getFloat() - original) <= EPS);
+}
+
+TEST_CASE("ByteBuffer::ByteOrder_Double", "[JavaCompat]")
+{
+    ByteBuffer bb;
+    bb.order(ByteOrder::ORDER_LITTLE_ENDIAN);
+
+    double original = 2.718281828459045;
+    bb.putDouble(original);
+
+    bb.flip();
+    bb.order(ByteOrder::ORDER_LITTLE_ENDIAN);
+
+    const double EPS = 1e-10;
+    REQUIRE(fabs(bb.getDouble() - original) <= EPS);
+}
+
+// ----------------------------------------------------------------------------
+// compareTo Tests
+// ----------------------------------------------------------------------------
+TEST_CASE("ByteBuffer::compareTo_Equal", "[JavaCompat]")
+{
+    ByteBuffer bb1;
+    bb1.put(1);
+    bb1.put(2);
+    bb1.put(3);
+
+    ByteBuffer bb2;
+    bb2.put(1);
+    bb2.put(2);
+    bb2.put(3);
+
+    REQUIRE(bb1.compareTo(bb2) == 0);
+}
+
+TEST_CASE("ByteBuffer::compareTo_LessThan", "[JavaCompat]")
+{
+    ByteBuffer bb1;
+    bb1.put(1);
+    bb1.put(2);
+    bb1.put(3);
+
+    ByteBuffer bb2;
+    bb2.put(1);
+    bb2.put(2);
+    bb2.put(4);  // 4 > 3
+
+    REQUIRE(bb1.compareTo(bb2) < 0);
+}
+
+TEST_CASE("ByteBuffer::compareTo_GreaterThan", "[JavaCompat]")
+{
+    ByteBuffer bb1;
+    bb1.put(1);
+    bb1.put(2);
+    bb1.put(5);  // 5 > 4
+
+    ByteBuffer bb2;
+    bb2.put(1);
+    bb2.put(2);
+    bb2.put(4);
+
+    REQUIRE(bb1.compareTo(bb2) > 0);
+}
+
+TEST_CASE("ByteBuffer::compareTo_DifferentLength", "[JavaCompat]")
+{
+    ByteBuffer bb1;
+    bb1.put(1);
+    bb1.put(2);
+
+    ByteBuffer bb2;
+    bb2.put(1);
+    bb2.put(2);
+    bb2.put(3);
+
+    // bb1 is shorter, should be less than bb2
+    REQUIRE(bb1.compareTo(bb2) < 0);
+}
+
+TEST_CASE("ByteBuffer::compareTo_Empty", "[JavaCompat]")
+{
+    ByteBuffer bb1;
+    ByteBuffer bb2;
+
+    REQUIRE(bb1.compareTo(bb2) == 0);
+}
+
+// ----------------------------------------------------------------------------
+// hash Tests
+// ----------------------------------------------------------------------------
+TEST_CASE("ByteBuffer::hash_Basic", "[JavaCompat]")
+{
+    ByteBuffer bb;
+    bb.put(1);
+    bb.put(2);
+    bb.put(3);
+
+    size_t h = bb.hash();
+    REQUIRE(h != 0);
+}
+
+TEST_CASE("ByteBuffer::hash_EqualBuffers", "[JavaCompat]")
+{
+    ByteBuffer bb1;
+    bb1.put(1);
+    bb1.put(2);
+    bb1.put(3);
+
+    ByteBuffer bb2;
+    bb2.put(1);
+    bb2.put(2);
+    bb2.put(3);
+
+    REQUIRE(bb1.hash() == bb2.hash());
+}
+
+TEST_CASE("ByteBuffer::hash_DifferentBuffers", "[JavaCompat]")
+{
+    ByteBuffer bb1;
+    bb1.put(1);
+    bb1.put(2);
+    bb1.put(3);
+
+    ByteBuffer bb2;
+    bb2.put(4);
+    bb2.put(5);
+    bb2.put(6);
+
+    REQUIRE(bb1.hash() != bb2.hash());
+}
+
+TEST_CASE("ByteBuffer::hash_Empty", "[JavaCompat]")
+{
+    ByteBuffer bb;
+    size_t h = bb.hash();
+    REQUIRE(h == 0);  // Empty buffer should have hash of 0
+}
+
+// ----------------------------------------------------------------------------
+// toString Tests
+// ----------------------------------------------------------------------------
+TEST_CASE("ByteBuffer::toString_Basic", "[JavaCompat]")
+{
+    ByteBuffer bb(100, "TestBuffer");
+    bb.put(1);
+    bb.put(2);
+
+    std::string str = bb.toString();
+    REQUIRE(str.find("ByteBuffer") != std::string::npos);
+    REQUIRE(str.find("pos=") != std::string::npos);
+    REQUIRE(str.find("lim=") != std::string::npos);
+    REQUIRE(str.find("cap=") != std::string::npos);
+}
+
+TEST_CASE("ByteBuffer::toString_AfterFlip", "[JavaCompat]")
+{
+    ByteBuffer bb;
+    bb.put(1);
+    bb.put(2);
+    bb.put(3);
+
+    std::string str1 = bb.toString();
+
+    bb.flip();
+    std::string str2 = bb.toString();
+
+    // Position should change after flip
+    REQUIRE(str1 != str2);
+}
