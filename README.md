@@ -21,6 +21,7 @@ C++ 实现的 Java NIO ByteBuffer 功能，支持跨平台（Windows、macOS、L
     - [读取方法](#读取方法)
     - [状态方法](#状态方法)
     - [其他方法](#其他方法)
+    - [Java 兼容接口](#java-兼容接口)
   - [构建与测试](#构建与测试)
     - [依赖](#依赖)
     - [构建](#构建)
@@ -198,6 +199,78 @@ bb.compact();
 | `duplicate()` | 复制一个 ByteBuffer |
 | `printInfo()` | 打印缓冲区信息 |
 
+### Java 兼容接口
+
+#### 数组访问方法
+
+| 方法 | 描述 |
+|------|------|
+| `hasArray()` | 检查是否有可访问数组（始终返回 true） |
+| `array()` | 返回底层字节数组指针 |
+| `const array() const` | 返回底层字节数组指针（const 版本） |
+| `arrayOffset()` | 返回数组偏移量（始终返回 0） |
+
+#### 直接缓冲区方法
+
+| 方法 | 描述 |
+|------|------|
+| `isDirect()` | 判断是否为直接缓冲区（当前实现返回 false） |
+
+#### 字节序方法
+
+| 方法 | 描述 |
+|------|------|
+| `ByteOrder` | 枚举类型：`ORDER_BIG_ENDIAN` / `ORDER_LITTLE_ENDIAN` |
+| `order()` | 获取当前字节序 |
+| `order(ByteOrder)` | 设置字节序，返回 `ByteBuffer&` 支持链式调用 |
+| `static nativeOrder()` | 获取主机字节序 |
+
+**字节序使用示例：**
+
+```cpp
+#include "ByteBuffer.h"
+
+ByteBuffer bb;
+
+// 设置为大端字节序（网络字节序）
+bb.order(ByteOrder::ORDER_BIG_ENDIAN);
+
+// 写入数据（自动按大端字节序存储）
+bb.putInt(0x12345678);  // 缓冲区中字节顺序：12 34 56 78
+
+// 切换为小端字节序
+bb.order(ByteOrder::ORDER_LITTLE_ENDIAN);
+bb.putInt(0x12345678);  // 缓冲区中字节顺序：78 56 34 12
+
+// 读取时自动转换
+bb.flip();
+bb.order(ByteOrder::ORDER_BIG_ENDIAN);
+uint32_t value = bb.getInt();  // 正确读取 0x12345678
+```
+
+#### 比较和辅助方法
+
+| 方法 | 描述 |
+|------|------|
+| `compareTo(const ByteBuffer&)` | 按字典序比较两个缓冲区，返回负数/0/正数 |
+| `hash()` | 计算缓冲区内容的哈希值 |
+| `toString()` | 返回缓冲区的字符串表示 |
+
+**使用示例：**
+
+```cpp
+// 比较缓冲区
+ByteBuffer bb1, bb2;
+// ... 填充数据 ...
+int result = bb1.compareTo(bb2);  // <0: bb1<bb2, =0: 相等，>0: bb1>bb2
+
+// 哈希值（可用于 unordered_map 等容器）
+size_t h = bb1.hash();
+
+// 字符串表示
+std::string str = bb1.toString();  // "ByteBuffer[pos=5 lim=10 cap=100]"
+```
+
 ## 构建与测试
 
 ### 依赖
@@ -241,7 +314,7 @@ ctest --output-on-failure
 
 2. **内存对齐**：对于多字节类型的读写，某些架构（如 ARM）可能要求内存对齐。未对齐的访问可能导致性能下降或崩溃。建议在处理大量数据时确保数据对齐。
 
-3. **字节序**：本实现使用主机字节序（host byte order）。如需网络传输，请自行处理字节序转换（如使用 `htons`/`ntohs` 等函数）。
+3. **字节序**：本实现支持字节序设置，默认使用主机字节序。可通过 `order()` 方法设置大端或小端字节序，适用于跨平台数据序列化和网络传输。
 
 4. **异常处理**：当内存分配失败时，会抛出 `std::bad_alloc` 异常。请确保在调用时进行适当的异常处理。
 
