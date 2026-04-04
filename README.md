@@ -345,6 +345,4 @@ This project uses GitHub Actions for continuous integration, supporting the foll
 ## References
 
 - [Java ByteBuffer Documentation](https://docs.oracle.com/javase/7/docs/api/java/nio/ByteBuffer.html)
-- [java.nio.Buffer flip() method](https://blog.csdn.net/hbtj_1216/article/details/53129588)
-- [ByteBuffer common methods](https://blog.csdn.net/moakun/article/details/80630477)
 - [Netty ByteBuf](https://netty.io/4.0/api/io/netty/buffer/ByteBuf.html)

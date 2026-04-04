@@ -345,6 +345,4 @@ ctest --output-on-failure
 ## 参考链接
 
 - [Java ByteBuffer 文档](https://docs.oracle.com/javase/7/docs/api/java/nio/ByteBuffer.html)
-- [java.nio.Buffer flip() 方法](https://blog.csdn.net/hbtj_1216/article/details/53129588)
-- [ByteBuffer 常用方法](https://blog.csdn.net/moakun/article/details/80630477)
 - [Netty ByteBuf](https://netty.io/4.0/api/io/netty/buffer/ByteBuf.html)
